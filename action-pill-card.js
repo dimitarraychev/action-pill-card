@@ -7,7 +7,7 @@
 const CARD_TAG = "action-pill-card";
 const EDITOR_TAG = "action-pill-card-editor";
 const CARD_NAME = "Action Pill Card";
-const CARD_VERSION = "0.1.4-beta";
+const CARD_VERSION = "0.1.5-beta";
 const HOLD_MS = 500;
 
 const COLOR_MAP = {
@@ -255,9 +255,7 @@ class ActionPillCard extends HTMLElement {
     );
     this._card.style.setProperty(
       "--apc-pill-shadow",
-      m.colorBackground
-        ? "none"
-        : "var(--ha-card-glass-inset-shadow, 3px 3px 0.5px -3.5px rgba(255, 255, 255, 0.30) inset, -2px -2px 0.5px -2px rgba(255, 255, 255, 0.30) inset, 0 0 8px 1px rgba(255, 255, 255, 0.10) inset, 0 0 2px 0 rgba(0, 0, 0, 0.10))"
+      "var(--ha-card-glass-inset-shadow, 3px 3px 0.5px -3.5px rgba(255, 255, 255, 0.30) inset, -2px -2px 0.5px -2px rgba(255, 255, 255, 0.30) inset, 0 0 8px 1px rgba(255, 255, 255, 0.10) inset, 0 0 2px 0 rgba(0, 0, 0, 0.10))"
     );
     this._card.style.setProperty(
       "--apc-icon-bg",
@@ -343,7 +341,7 @@ const EDITOR_LABELS = {
   icon: "Icon",
   color: "Color (name, hex, CSS color or entity ID)",
   card_style: "Card style",
-  color_background: "Color card background and glow",
+  color_background: "Color card background",
   color_icon_background: "Color icon background",
   color_text: "Color text",
   tap_action: "Tap action",
