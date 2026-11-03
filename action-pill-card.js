@@ -7,7 +7,7 @@
 const CARD_TAG = "action-pill-card";
 const EDITOR_TAG = "action-pill-card-editor";
 const CARD_NAME = "Action Pill Card";
-const CARD_VERSION = "0.1.1-beta";
+const CARD_VERSION = "0.1.2-beta";
 const HOLD_MS = 500;
 
 const COLOR_MAP = {
@@ -63,6 +63,10 @@ class ActionPillCard extends HTMLElement {
           border-radius: 32px;
           background: var(--apc-pill-bg);
           box-shadow: var(--apc-pill-shadow);
+          overflow: hidden;
+          border: none;
+          -webkit-backdrop-filter: var(--ha-card-backdrop-filter, blur(8px) saturate(1.2));
+          backdrop-filter: var(--ha-card-backdrop-filter, blur(8px) saturate(1.2));
         }
         .card:focus, .card:focus-visible { outline: none; }
         .card.kbd:focus-visible .pill { outline: 2px solid var(--apc-color); outline-offset: 2px; }
@@ -98,8 +102,6 @@ class ActionPillCard extends HTMLElement {
           padding: 13px 9px;
           gap: 12px;
           border-radius: var(--ha-card-border-radius, 12px);
-          -webkit-backdrop-filter: blur(12px);
-          backdrop-filter: blur(12px);
         }
         .card.mushroom .icon {
           width: 65px;
@@ -249,11 +251,13 @@ class ActionPillCard extends HTMLElement {
     this._card.style.setProperty("--apc-color", m.color);
     this._card.style.setProperty(
       "--apc-pill-bg",
-      m.colorBackground ? `color-mix(in srgb, ${m.color} 12%, transparent)` : "var(--ha-card-background, var(--card-background-color))"
+      m.colorBackground ? `color-mix(in srgb, ${m.color} 12%, transparent)` : "color-mix(in srgb, var(--primary-text-color) 4%, transparent)"
     );
     this._card.style.setProperty(
       "--apc-pill-shadow",
-      m.colorBackground ? `inset 0 0 10px color-mix(in srgb, ${m.color} 45%, transparent)` : "none"
+      m.colorBackground
+        ? `inset 0 0 10px color-mix(in srgb, ${m.color} 45%, transparent)`
+        : "var(--ha-card-glass-inset-shadow, 3px 3px 0.5px -3.5px rgba(255, 255, 255, 0.30) inset, -2px -2px 0.5px -2px rgba(255, 255, 255, 0.30) inset, 0 0 8px 1px rgba(255, 255, 255, 0.10) inset, 0 0 2px 0 rgba(0, 0, 0, 0.10))"
     );
     this._card.style.setProperty(
       "--apc-icon-bg",
