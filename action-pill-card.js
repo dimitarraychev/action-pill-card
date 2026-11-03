@@ -7,7 +7,7 @@
 const CARD_TAG = "action-pill-card";
 const EDITOR_TAG = "action-pill-card-editor";
 const CARD_NAME = "Action Pill Card";
-const CARD_VERSION = "0.1.5-beta";
+const CARD_VERSION = "0.1.6-beta";
 const HOLD_MS = 500;
 
 const COLOR_MAP = {
@@ -46,6 +46,8 @@ class ActionPillCard extends HTMLElement {
           position: relative;
           box-sizing: border-box;
           height: 56px;
+          border-radius: 32px;
+          box-shadow: var(--ha-card-box-shadow, none);
           cursor: pointer;
           -webkit-tap-highlight-color: transparent;
           user-select: none;
@@ -96,7 +98,7 @@ class ActionPillCard extends HTMLElement {
           white-space: nowrap;
         }
         /* ---------- Mushroom style ---------- */
-        .card.mushroom { height: 68px; }
+        .card.mushroom { height: 68px; border-radius: var(--ha-card-border-radius, 12px); }
         .card.mushroom .pill {
           overflow: hidden;
           padding: 13px 9px;
