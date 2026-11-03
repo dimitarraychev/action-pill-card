@@ -7,7 +7,7 @@
 const CARD_TAG = "action-pill-card";
 const EDITOR_TAG = "action-pill-card-editor";
 const CARD_NAME = "Action Pill Card";
-const CARD_VERSION = "0.1.3-beta";
+const CARD_VERSION = "0.1.4-beta";
 const HOLD_MS = 500;
 
 const COLOR_MAP = {
@@ -72,9 +72,9 @@ class ActionPillCard extends HTMLElement {
         .card.kbd:focus-visible .pill { outline: 2px solid var(--apc-color); outline-offset: 2px; }
         .icon {
           flex: none;
-          width: 48px;
-          height: 48px;
-          margin: 4px;
+          width: 36px;
+          height: 36px;
+          margin: 10px 0 10px 10px;
           border-radius: 50%;
           display: flex;
           align-items: center;
@@ -86,7 +86,7 @@ class ActionPillCard extends HTMLElement {
         .name {
           flex: 1;
           min-width: 0;
-          margin-left: -1px;
+          margin-left: 8px;
           padding-right: 16px;
           font-size: 14px;
           font-weight: var(--card-primary-font-weight, 500);
