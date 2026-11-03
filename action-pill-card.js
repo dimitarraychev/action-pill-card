@@ -7,7 +7,7 @@
 const CARD_TAG = "action-pill-card";
 const EDITOR_TAG = "action-pill-card-editor";
 const CARD_NAME = "Action Pill Card";
-const CARD_VERSION = "0.1.2-beta";
+const CARD_VERSION = "0.1.3-beta";
 const HOLD_MS = 500;
 
 const COLOR_MAP = {
@@ -72,9 +72,9 @@ class ActionPillCard extends HTMLElement {
         .card.kbd:focus-visible .pill { outline: 2px solid var(--apc-color); outline-offset: 2px; }
         .icon {
           flex: none;
-          width: 42px;
-          height: 42px;
-          margin: 7px;
+          width: 48px;
+          height: 48px;
+          margin: 4px;
           border-radius: 50%;
           display: flex;
           align-items: center;
@@ -86,10 +86,10 @@ class ActionPillCard extends HTMLElement {
         .name {
           flex: 1;
           min-width: 0;
-          margin-left: 2px;
+          margin-left: -1px;
           padding-right: 16px;
           font-size: 14px;
-          font-weight: 600;
+          font-weight: var(--card-primary-font-weight, 500);
           color: var(--apc-text);
           overflow: hidden;
           text-overflow: ellipsis;
@@ -251,12 +251,12 @@ class ActionPillCard extends HTMLElement {
     this._card.style.setProperty("--apc-color", m.color);
     this._card.style.setProperty(
       "--apc-pill-bg",
-      m.colorBackground ? `color-mix(in srgb, ${m.color} 12%, transparent)` : "color-mix(in srgb, var(--primary-text-color) 4%, transparent)"
+      m.colorBackground ? `color-mix(in srgb, ${m.color} 15%, transparent)` : "color-mix(in srgb, var(--primary-text-color) 4%, transparent)"
     );
     this._card.style.setProperty(
       "--apc-pill-shadow",
       m.colorBackground
-        ? `inset 0 0 10px color-mix(in srgb, ${m.color} 45%, transparent)`
+        ? "none"
         : "var(--ha-card-glass-inset-shadow, 3px 3px 0.5px -3.5px rgba(255, 255, 255, 0.30) inset, -2px -2px 0.5px -2px rgba(255, 255, 255, 0.30) inset, 0 0 8px 1px rgba(255, 255, 255, 0.10) inset, 0 0 2px 0 rgba(0, 0, 0, 0.10))"
     );
     this._card.style.setProperty(
