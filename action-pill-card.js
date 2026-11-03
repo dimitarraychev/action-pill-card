@@ -7,7 +7,7 @@
 const CARD_TAG = "action-pill-card";
 const EDITOR_TAG = "action-pill-card-editor";
 const CARD_NAME = "Action Pill Card";
-const CARD_VERSION = "0.1.0-beta";
+const CARD_VERSION = "0.1.1-beta";
 const HOLD_MS = 500;
 
 const COLOR_MAP = {
@@ -61,8 +61,8 @@ class ActionPillCard extends HTMLElement {
           display: flex;
           align-items: center;
           border-radius: 32px;
-          background: color-mix(in srgb, var(--apc-color) 12%, transparent);
-          box-shadow: inset 0 0 10px color-mix(in srgb, var(--apc-color) 45%, transparent);
+          background: var(--apc-pill-bg);
+          box-shadow: var(--apc-pill-shadow);
         }
         .card:focus, .card:focus-visible { outline: none; }
         .card.kbd:focus-visible .pill { outline: 2px solid var(--apc-color); outline-offset: 2px; }
@@ -219,6 +219,7 @@ class ActionPillCard extends HTMLElement {
       name: s.name ?? stateObj?.attributes?.friendly_name ?? DEFAULTS.button.name,
       icon: s.icon || stateObj?.attributes?.icon || DEFAULTS.button.icon,
       color,
+      colorBackground: cfg.color_background !== false,
       colorIconBg: cfg.color_icon_background !== false,
       colorText: cfg.color_text !== false,
       cardStyle: cfg.card_style === "mushroom" ? "mushroom" : "bubble",
@@ -246,6 +247,14 @@ class ActionPillCard extends HTMLElement {
     this._key = key;
 
     this._card.style.setProperty("--apc-color", m.color);
+    this._card.style.setProperty(
+      "--apc-pill-bg",
+      m.colorBackground ? `color-mix(in srgb, ${m.color} 12%, transparent)` : "var(--ha-card-background, var(--card-background-color))"
+    );
+    this._card.style.setProperty(
+      "--apc-pill-shadow",
+      m.colorBackground ? `inset 0 0 10px color-mix(in srgb, ${m.color} 45%, transparent)` : "none"
+    );
     this._card.style.setProperty(
       "--apc-icon-bg",
       m.colorIconBg ? `color-mix(in srgb, ${m.color} 20%, transparent)` : "color-mix(in srgb, var(--primary-text-color) 10%, transparent)"
@@ -330,6 +339,7 @@ const EDITOR_LABELS = {
   icon: "Icon",
   color: "Color (name, hex, CSS color or entity ID)",
   card_style: "Card style",
+  color_background: "Color card background and glow",
   color_icon_background: "Color icon background",
   color_text: "Color text",
   tap_action: "Tap action",
@@ -360,24 +370,34 @@ const getEditorSchema = (config) => {
       selector: { select: { mode: "box", options: [{ value: "button", label: "Button" }, { value: "toggle", label: "Toggle" }] } },
     },
     { name: "entity", required: toggle, selector: { entity: {} } },
-    ...(toggle ? [{ name: "active_state", selector: { text: {} } }] : []),
-    {
-      name: "card_style",
-      selector: { select: { mode: "dropdown", options: [{ value: "bubble", label: "Bubble" }, { value: "mushroom", label: "Mushroom" }] } },
-    },
-    { name: "color_icon_background", selector: { boolean: {} } },
-    { name: "color_text", selector: { boolean: {} } },
-    { name: "name", selector: { text: {} } },
-    { name: "icon", selector: { icon: {} } },
-    { name: "color", selector: COLOR_SELECTOR },
-    { name: "tap_action", selector: { ui_action: {} } },
-    { name: "hold_action", selector: { ui_action: {} } },
     ...(toggle
       ? [
-          { type: "expandable", name: "state_on", title: "Active state overrides", schema: stateSchema },
-          { type: "expandable", name: "state_off", title: "Inactive state overrides", schema: stateSchema },
+          { name: "active_state", selector: { text: {} } },
+          { type: "expandable", name: "state_on", title: "Active state", schema: stateSchema },
+          { type: "expandable", name: "state_off", title: "Inactive state", schema: stateSchema },
         ]
-      : []),
+      : [
+          { name: "name", selector: { text: {} } },
+          { name: "icon", selector: { icon: {} } },
+          { name: "color", selector: COLOR_SELECTOR },
+          { name: "tap_action", selector: { ui_action: {} } },
+          { name: "hold_action", selector: { ui_action: {} } },
+        ]),
+    {
+      type: "expandable",
+      name: "display_section",
+      title: "Display settings",
+      flatten: true,
+      schema: [
+        {
+          name: "card_style",
+          selector: { select: { mode: "dropdown", options: [{ value: "bubble", label: "Bubble" }, { value: "mushroom", label: "Mushroom" }] } },
+        },
+        { name: "color_background", selector: { boolean: {} } },
+        { name: "color_icon_background", selector: { boolean: {} } },
+        { name: "color_text", selector: { boolean: {} } },
+      ],
+    },
   ];
 };
 
@@ -402,6 +422,7 @@ class ActionPillCardEditor extends HTMLElement {
         ev.stopPropagation();
         const config = prune({ ...this._config, ...ev.detail.value });
         if (config.card_style === "bubble") delete config.card_style;
+        if (config.color_background === true) delete config.color_background;
         if (config.color_icon_background === true) delete config.color_icon_background;
         if (config.color_text === true) delete config.color_text;
         if (config.mode === "button") delete config.mode;
@@ -411,7 +432,7 @@ class ActionPillCardEditor extends HTMLElement {
     }
     this._form.hass = this._hass;
     this._form.schema = getEditorSchema({ mode: "button", ...this._config });
-    this._form.data = { mode: "button", card_style: "bubble", color_icon_background: true, color_text: true, ...this._config };
+    this._form.data = { mode: "button", card_style: "bubble", color_background: true, color_icon_background: true, color_text: true, ...this._config };
   }
 }
 
