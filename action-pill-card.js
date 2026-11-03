@@ -7,7 +7,7 @@
 const CARD_TAG = "action-pill-card";
 const EDITOR_TAG = "action-pill-card-editor";
 const CARD_NAME = "Action Pill Card";
-const CARD_VERSION = "0.1.0";
+const CARD_VERSION = "0.1.0-beta";
 const HOLD_MS = 500;
 
 const COLOR_MAP = {
