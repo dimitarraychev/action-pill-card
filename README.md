@@ -14,6 +14,7 @@ Bubble- or Mushroom-style button card for Home Assistant with a visual editor. U
 | `active_state` | `on` | State(s) counted as active, comma separated |
 | `card_style` | `bubble` | `bubble` or `mushroom` |
 | `color` | blue | Name (`red`, `green`, …), hex, CSS color/variable, or an entity ID whose state is a color |
+| `color_background` | `true` | Tint the card background and inner glow; off gives a neutral card |
 | `color_icon_background` | `true` | Tint the icon circle |
 | `color_text` | `true` | Color the label |
 | `name`, `icon` | – | Shared by both toggle states unless overridden |
