@@ -2,13 +2,16 @@
  * Action Pill Card
  * A single-row Lovelace button card in Bubble or Mushroom style. Works as a plain button or as a
  * two-state toggle whose name, icon, colour and tap action follow an entity's state.
+ * Optional confirmation: the pill asks "Are you sure?" with confirm / cancel buttons before it acts.
  */
 
 const CARD_TAG = "action-pill-card";
 const EDITOR_TAG = "action-pill-card-editor";
 const CARD_NAME = "Action Pill Card";
-const CARD_VERSION = "0.1.6-beta";
+const CARD_VERSION = "0.2.0-beta";
 const HOLD_MS = 500;
+const DEFAULT_CONFIRM = "Are you sure?";
+const DEFAULT_CONFIRM_TIMEOUT = 6;
 
 const COLOR_MAP = {
   gray: "#8E8E93",
@@ -97,6 +100,25 @@ class ActionPillCard extends HTMLElement {
           text-overflow: ellipsis;
           white-space: nowrap;
         }
+
+        /* ---------- Confirmation ---------- */
+        .actions { flex: none; display: none; align-items: center; gap: 6px; margin-right: 10px; }
+        .card.confirming { cursor: default; }
+        .card.confirming .actions { display: flex; }
+        .card.confirming .name {
+          padding-right: 8px; white-space: normal; line-height: 1.2; font-size: 13px;
+          display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+        }
+        .cbtn {
+          all: unset; box-sizing: border-box; cursor: pointer; width: 36px; height: 36px; border-radius: 50%;
+          display: flex; align-items: center; justify-content: center; --mdc-icon-size: 22px;
+          transition: transform .1s; -webkit-tap-highlight-color: transparent;
+        }
+        .cbtn:active { transform: scale(.9); }
+        .cbtn:focus-visible { outline: 2px solid var(--apc-color); outline-offset: 2px; }
+        .cbtn.no { color: var(--secondary-text-color); background: color-mix(in srgb, var(--primary-text-color) 10%, transparent); }
+        .cbtn.yes { color: #fff; background: var(--apc-color); }
+
         /* ---------- Mushroom style ---------- */
         .card.mushroom { height: 68px; border-radius: var(--ha-card-border-radius, 12px); }
         .card.mushroom .pill {
@@ -112,11 +134,16 @@ class ActionPillCard extends HTMLElement {
           --mdc-icon-size: 44px;
         }
         .card.mushroom .name { margin: 0; padding-right: 4px; }
+        .card.mushroom .actions { margin-right: 0; }
       </style>
       <div class="card" tabindex="0" role="button">
         <div class="pill">
           <div class="icon"></div>
           <div class="name"></div>
+          <div class="actions">
+            <button class="cbtn no" aria-label="Cancel"><ha-icon icon="mdi:close"></ha-icon></button>
+            <button class="cbtn yes" aria-label="Confirm"><ha-icon icon="mdi:check"></ha-icon></button>
+          </div>
         </div>
       </div>`;
     const $ = (s) => this.shadowRoot.querySelector(s);
@@ -125,8 +152,10 @@ class ActionPillCard extends HTMLElement {
     this._name = $(".name");
     this._timer = null;
     this._held = false;
+    this._confirm = null;
 
     this._card.addEventListener("click", (e) => {
+      if (this._confirm) return; // while asking, only the two buttons act
       if (this._held) {
         this._held = false;
         return;
@@ -134,9 +163,13 @@ class ActionPillCard extends HTMLElement {
       this._run("tap_action");
       if (e.detail) this._card.blur();
     });
+    $(".cbtn.yes").addEventListener("click", (e) => { e.stopPropagation(); this._acceptConfirm(); });
+    $(".cbtn.no").addEventListener("click", (e) => { e.stopPropagation(); this._cancelConfirm(); });
+
     this._card.addEventListener("pointerdown", () => {
       this._card.classList.remove("kbd");
       this._held = false;
+      if (this._confirm) return;
       if (!this._action("hold_action") || this._action("hold_action").action === "none") return;
       this._timer = setTimeout(() => {
         this._held = true;
@@ -150,11 +183,22 @@ class ActionPillCard extends HTMLElement {
     });
     this.shadowRoot.addEventListener("keydown", (e) => { if (e.key === "Tab") this._card.classList.add("kbd"); }, true);
     this._card.addEventListener("keydown", (e) => {
+      if (this._confirm) {
+        if (e.key === "Escape") { e.preventDefault(); this._cancelConfirm(); return; }
+        if (e.target.closest && e.target.closest(".cbtn")) return; // the buttons handle Enter / Space themselves
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); this._acceptConfirm(); }
+        return;
+      }
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
         this._run("tap_action");
       }
     });
+  }
+
+  disconnectedCallback() {
+    clearTimeout(this._timer);
+    this._clearConfirm();
   }
 
   static getConfigElement() {
@@ -174,6 +218,7 @@ class ActionPillCard extends HTMLElement {
       throw new Error("`card_style` must be `bubble` or `mushroom`.");
     }
     this._config = { ...config, mode };
+    this._clearConfirm();
     this._key = null;
     this._render();
   }
@@ -229,6 +274,7 @@ class ActionPillCard extends HTMLElement {
       cardStyle: cfg.card_style === "mushroom" ? "mushroom" : "bubble",
       unavailable,
       inert: unavailable || (this._action("tap_action", s)?.action ?? "none") === "none",
+      confirm: this._confirm ? this._confirm.text : null,
     };
   }
 
@@ -268,18 +314,81 @@ class ActionPillCard extends HTMLElement {
     this._card.classList.toggle("unavailable", m.unavailable);
     this._card.classList.toggle("inert", m.inert);
     this._card.setAttribute("aria-disabled", String(m.inert));
-    this._icon.innerHTML = `<ha-icon icon="${esc(m.icon)}"></ha-icon>`;
-    this._name.textContent = m.name;
-    this._card.setAttribute("aria-label", m.name);
+    const asking = m.confirm != null;
+    this._card.classList.toggle("confirming", asking);
+    this._icon.innerHTML = `<ha-icon icon="${esc(asking ? "mdi:help" : m.icon)}"></ha-icon>`;
+    this._name.textContent = asking ? m.confirm : m.name;
+    this._card.setAttribute("aria-label", asking ? m.confirm : m.name);
   }
 
   _fire(type, detail) {
     this.dispatchEvent(new CustomEvent(type, { detail, bubbles: true, composed: true }));
   }
 
-  _run(which) {
+  // ---------- confirmation ----------
+  // Returns the message to ask, or null when the action runs straight away.
+  // An action's own `confirmation` (the Home Assistant way: `true` or `{ text, exemptions }`)
+  // wins over the card's confirm_* settings.
+  _confirmFor(which, a) {
+    const cfg = this._config;
+    const name = this._compute().name;
+    const fill = (t) => String(t).replace(/\{name\}/g, name);
+    const c = a.confirmation;
+    if (c) {
+      const exemptions = typeof c === "object" && Array.isArray(c.exemptions) ? c.exemptions : [];
+      if (exemptions.some((e) => e && e.user && e.user === this._hass?.user?.id)) return null;
+      return fill(typeof c === "object" && c.text ? c.text : cfg.confirm_text || DEFAULT_CONFIRM);
+    }
+    if (!(which === "hold_action" ? cfg.confirm_hold : cfg.confirm_tap)) return null;
+    if (cfg.mode === "toggle") {
+      const when = cfg.confirm_when || "always";
+      const state = this._slot()._state;
+      if (when === "active" && state !== "on") return null;
+      if (when === "inactive" && state !== "off") return null;
+    }
+    return fill(cfg.confirm_text || DEFAULT_CONFIRM);
+  }
+
+  _ask(which, text) {
+    this._clearConfirm();
+    this._confirm = { which, text };
+    const secs = this._config.confirm_timeout == null ? DEFAULT_CONFIRM_TIMEOUT : Number(this._config.confirm_timeout);
+    if (secs > 0) this._confirmTimer = setTimeout(() => this._cancelConfirm(), secs * 1000);
+    // tapping anywhere else cancels
+    this._outside = (e) => { if (!e.composedPath().includes(this)) this._cancelConfirm(); };
+    document.addEventListener("pointerdown", this._outside, true);
+    this._fire("haptic", "light");
+    this._render();
+  }
+
+  _clearConfirm() {
+    clearTimeout(this._confirmTimer);
+    if (this._outside) document.removeEventListener("pointerdown", this._outside, true);
+    this._outside = null;
+    this._confirm = null;
+  }
+
+  _cancelConfirm() {
+    if (!this._confirm) return;
+    this._clearConfirm();
+    this._render();
+  }
+
+  _acceptConfirm() {
+    const which = this._confirm?.which;
+    if (!which) return;
+    this._clearConfirm();
+    this._render();
+    this._run(which, true);
+  }
+
+  _run(which, confirmed = false) {
     const a = this._action(which);
     if (!a || a.action === "none") return;
+    if (!confirmed) {
+      const text = this._confirmFor(which, a);
+      if (text) { this._ask(which, text); return; }
+    }
     const hass = this._hass;
     const entityId = a.entity || this._config.entity;
     this._fire("haptic", which === "hold_action" ? "medium" : "light");
@@ -348,6 +457,14 @@ const EDITOR_LABELS = {
   color_text: "Color text",
   tap_action: "Tap action",
   hold_action: "Hold action",
+  confirm_tap: "Ask for confirmation before the tap action",
+  confirm_hold: "Ask for confirmation before the hold action",
+  confirm_text: "Message (use {name} for the button name)",
+  confirm_when: "Ask when",
+  confirm_timeout: "Dismiss automatically after (seconds, 0 = never)",
+};
+const EDITOR_HELPERS = {
+  confirm_text: `Default: ${DEFAULT_CONFIRM}`,
 };
 
 const COLOR_SELECTOR = {
@@ -368,6 +485,7 @@ const stateSchema = [
 
 const getEditorSchema = (config) => {
   const toggle = config.mode === "toggle";
+  const asking = !!(config.confirm_tap || config.confirm_hold);
   return [
     {
       name: "mode",
@@ -387,6 +505,39 @@ const getEditorSchema = (config) => {
           { name: "tap_action", selector: { ui_action: {} } },
           { name: "hold_action", selector: { ui_action: {} } },
         ]),
+    {
+      type: "expandable",
+      name: "confirmation_section",
+      title: "Confirmation",
+      flatten: true,
+      schema: [
+        { name: "confirm_tap", selector: { boolean: {} } },
+        { name: "confirm_hold", selector: { boolean: {} } },
+        ...(asking
+          ? [
+              { name: "confirm_text", selector: { text: {} } },
+              ...(toggle
+                ? [
+                    {
+                      name: "confirm_when",
+                      selector: {
+                        select: {
+                          mode: "dropdown",
+                          options: [
+                            { value: "always", label: "Always" },
+                            { value: "active", label: "Only when active" },
+                            { value: "inactive", label: "Only when inactive" },
+                          ],
+                        },
+                      },
+                    },
+                  ]
+                : []),
+              { name: "confirm_timeout", selector: { number: { min: 0, max: 30, step: 1, mode: "box", unit_of_measurement: "s" } } },
+            ]
+          : []),
+      ],
+    },
     {
       type: "expandable",
       name: "display_section",
@@ -422,6 +573,7 @@ class ActionPillCardEditor extends HTMLElement {
     if (!this._form) {
       this._form = document.createElement("ha-form");
       this._form.computeLabel = (s) => EDITOR_LABELS[s.name] || s.name;
+      this._form.computeHelper = (s) => EDITOR_HELPERS[s.name] || "";
       this._form.addEventListener("value-changed", (ev) => {
         ev.stopPropagation();
         const config = prune({ ...this._config, ...ev.detail.value });
@@ -430,13 +582,35 @@ class ActionPillCardEditor extends HTMLElement {
         if (config.color_icon_background === true) delete config.color_icon_background;
         if (config.color_text === true) delete config.color_text;
         if (config.mode === "button") delete config.mode;
+        // confirmation: don't write defaults / switched-off flags
+        if (!config.confirm_tap) delete config.confirm_tap;
+        if (!config.confirm_hold) delete config.confirm_hold;
+        if (config.confirm_when === "always") delete config.confirm_when;
+        if (config.confirm_timeout === DEFAULT_CONFIRM_TIMEOUT) delete config.confirm_timeout;
         this.dispatchEvent(new CustomEvent("config-changed", { detail: { config }, bubbles: true, composed: true }));
       });
       this.appendChild(this._form);
     }
     this._form.hass = this._hass;
-    this._form.schema = getEditorSchema({ mode: "button", ...this._config });
-    this._form.data = { mode: "button", card_style: "bubble", color_background: true, color_icon_background: true, color_text: true, ...this._config };
+    // only replace the schema when its shape changes, so open sections stay open
+    const cfg = { mode: "button", ...this._config };
+    const schemaKey = JSON.stringify([cfg.mode, !!(cfg.confirm_tap || cfg.confirm_hold)]);
+    if (schemaKey !== this._schemaKey) {
+      this._schemaKey = schemaKey;
+      this._form.schema = getEditorSchema(cfg);
+    }
+    this._form.data = {
+      mode: "button",
+      card_style: "bubble",
+      color_background: true,
+      color_icon_background: true,
+      color_text: true,
+      confirm_tap: false,
+      confirm_hold: false,
+      confirm_when: "always",
+      confirm_timeout: DEFAULT_CONFIRM_TIMEOUT,
+      ...this._config,
+    };
   }
 }
 
@@ -448,7 +622,7 @@ if (!window.customCards.some((c) => c.type === CARD_TAG)) {
   window.customCards.push({
     type: CARD_TAG,
     name: CARD_NAME,
-    description: "Bubble or Mushroom style button card. Plain button, or a toggle that changes text, icon, color and action with an entity's state.",
+    description: "Bubble or Mushroom style button card. Plain button, or a toggle that changes text, icon, color and action with an entity's state. Optional confirmation.",
     preview: true,
   });
 }
