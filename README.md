@@ -4,7 +4,7 @@ Bubble- or Mushroom-style button card for Home Assistant with a visual editor. U
 
 ## Install (HACS)
 1. HACS → ⋮ → **Custom repositories** → add this repo, category **Dashboard**.
-2. Install **Action Pill Card**, then reload the browser.
+​2. Install **Action Pill Card**, then reload the browser.
 
 ## Options
 | Option | Default | Notes |
@@ -20,6 +20,7 @@ Bubble- or Mushroom-style button card for Home Assistant with a visual editor. U
 | `name`, `icon` | – | Shared by both toggle states unless overridden |
 | `tap_action`, `hold_action` | button: none / toggle: toggle | Standard HA actions |
 | `state_on`, `state_off` | – | Per-state `name`, `icon`, `color`, `tap_action`, `hold_action` |
+| `confirmation` | – | Inline confirmation options for tap and hold actions (supports custom message, conditional triggering, and auto-dismiss timer) |
 
 Unavailable toggle entities dim the card and disable taps. Use HA's native `visibility:` for screen-size/state conditions.
 
